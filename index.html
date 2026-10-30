@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador de Créditos</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="mode-simple">
+  <!-- Barra Superior -->
+  <header class="topbar no-print">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-6"/></svg>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <h1>Simulador de Créditos</h1>
+            <span id="autosaveBadge" class="autosave-badge" title="Todos tus cambios se guardan automáticamente en este navegador">Guardado</span>
+          </div>
+          <p class="subtitle">Cuotas, abonos extraordinarios y copropiedad</p>
+        </div>
+      </div>
+
+      <!-- Selector de Modo: Sencillo vs Pro -->
+      <div class="mode-switcher" role="group" aria-label="Modo de interfaz">
+        <button type="button" id="btnModeSimple" class="mode-btn active">Sencillo</button>
+        <button type="button" id="btnModePro" class="mode-btn">Pro</button>
+      </div>
+
+      <!-- Acciones -->
+      <div class="topbar-actions">
+        <div class="scenario-bar" id="scenarioBarWrapper">
+          <div class="scenario-dropdown">
+            <button type="button" id="btnScenarioTrigger" class="scenario-trigger" title="Cambiar entre escenarios o crear uno nuevo">
+              <span id="scenarioTriggerIcon" class="scenario-type-icon"></span>
+              <span id="scenarioTriggerText" class="scenario-trigger-label">Escenarios (0)</span>
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div id="scenarioDropdownMenu" class="scenario-menu" style="display:none;">
+              <button type="button" id="btnMenuNewScenario" class="scenario-menu-new">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                <span>Nuevo escenario...</span>
+              </button>
+              <div id="scenarioMenuList" class="scenario-menu-list"></div>
+            </div>
+          </div>
+          <button type="button" id="btnNewScenarioQuick" class="btn btn-ghost btn-xs" title="Crear un nuevo escenario">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            Nuevo
+          </button>
+          <button type="button" id="btnSaveScenario" class="btn btn-ghost btn-xs" title="Guardar escenario">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+            Guardar
+          </button>
+          <button type="button" id="btnCompareScenarios" class="btn btn-ghost btn-xs" title="Comparar dos escenarios guardados lado a lado">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/></svg>
+            Comparar
+          </button>
+        </div>
+
+        <div class="history-bar" role="group" aria-label="Historial de cambios">
+          <button type="button" id="btnUndo" class="btn btn-ghost btn-xs btn-icon" title="Deshacer último cambio (Ctrl+Z)" disabled>
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+          </button>
+          <button type="button" id="btnRedo" class="btn btn-ghost btn-xs btn-icon" title="Rehacer cambio (Ctrl+Y)" disabled>
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+          </button>
+        </div>
+
+        <input type="file" id="csvFileInput" accept=".csv,text/csv" style="display: none;" />
+        <button type="button" id="btnImportCSV" class="btn btn-secondary">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+          Importar CSV
+        </button>
+        <button type="button" id="btnExportCSV" class="btn btn-primary" title="Exportar CSV">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+          Exportar CSV
+        </button>
+        <button type="button" id="btnPrintPDF" class="btn btn-secondary" title="Generar vista limpia en PDF">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+          PDF
+        </button>
+        <button type="button" id="btnToggleTheme" class="btn btn-ghost btn-icon" title="Cambiar entre tema oscuro y claro"></button>
+        <button type="button" id="btnResetZero" class="btn btn-danger-outline" title="Poner todos los campos en 0">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Reiniciar
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Cabecera exclusiva para impresión PDF -->
+    <div class="print-only print-header">
+      <h1>Resumen de Plan de Pagos y Participación</h1>
+      <p id="printDateSubtitle"></p>
+    </div>
+
+    <!-- KPIs -->
+    <section class="kpi-grid">
+      <div class="kpi-card kpi-highlight">
+        <div class="kpi-header">
+          <span class="kpi-title">Duración Estimada</span>
+          <span class="kpi-tag" id="kpiMonthsSavedTag">0 cuotas menos</span>
+        </div>
+        <div class="kpi-value" id="kpiFinalMonths">0 meses</div>
+        <div class="kpi-sub" id="kpiFinalDate">Plazo original: 0 meses</div>
+      </div>
+
+      <div class="kpi-card kpi-success">
+        <div class="kpi-header">
+          <span class="kpi-title">Ahorro Logrado</span>
+          <span class="kpi-tag tag-green" id="kpiSavingsPercent">0%</span>
+        </div>
+        <div class="kpi-value" id="kpiTotalSavings">$0</div>
+        <div class="kpi-sub" id="kpiSavingsBreakdown">Frente al plan original del banco</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-title">Total Crédito a Pagar</span>
+          <span class="kpi-tag" id="kpiOriginalCostTag">Banco: $0</span>
+        </div>
+        <div class="kpi-value" id="kpiTotalCreditPaid">$0</div>
+        <div class="kpi-sub pro-only" id="kpiInterestAndIns">Intereses: $0 · Seguros: $0</div>
+        <div class="kpi-sub simple-only" id="kpiProgressSimple">Cuotas pagadas: 0</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-title">Próximo Pago Mensual</span>
+          <span class="kpi-tag tag-blue" id="kpiCapitalRatioTag">0% a capital</span>
+        </div>
+        <div class="kpi-value" id="kpiNextTotalPayment">$0</div>
+        <div class="kpi-sub" id="kpiNextQuotaBreakdown">Cuota: $0 + Extra: $0</div>
+      </div>
+    </section>
+
+    <div class="workspace-grid">
+      <!-- COLUMNA IZQUIERDA -->
+      <aside class="config-column no-print">
+        <div class="card config-tabs-card">
+          <div class="tabs-nav">
+            <button type="button" class="tab-btn active" data-tab="tab-credito">1. Crédito</button>
+            <button type="button" class="tab-btn" data-tab="tab-personas">2. Personas</button>
+            <button type="button" class="tab-btn" data-tab="tab-seguros">3. Seguros</button>
+            <button type="button" class="tab-btn" data-tab="tab-estrategia">4. Ajustes</button>
+          </div>
+
+          <!-- PESTAÑA 1: Crédito -->
+          <div id="tab-credito" class="tab-panel active">
+            <div class="panel-title-row">
+              <h2>Datos Principales</h2>
+              <select id="loanType" class="select-pill">
+                <option value="vehiculo">Vehicular</option>
+                <option value="personal">Libre Inversión</option>
+                <option value="hipotecario">Hogar / Vivienda</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="assetValue">Valor del Bien ($)</label>
+                <input type="text" id="assetValue" value="0" />
+              </div>
+
+              <div class="form-group">
+                <label for="initialExtraCosts">Costo de Papeles ($)</label>
+                <input type="text" id="initialExtraCosts" value="0" />
+                <span class="field-hint">Matrícula, traspaso, impuestos, etc.</span>
+              </div>
+
+              <div class="form-group">
+                <label for="financedBase">Monto Financiado ($)</label>
+                <input type="text" id="financedBase" value="0" />
+                <span class="field-hint" id="downPaymentCalculated">Inicial: $0</span>
+              </div>
+
+              <div class="form-group">
+                <label for="totalAcquisitionDisplay">Costo Total (Bien + Papeles)</label>
+                <input type="text" id="totalAcquisitionDisplay" class="input-readonly" readonly value="$0" />
+              </div>
+
+              <div class="form-group">
+                <label for="termMonths">N° de Cuotas (Meses)</label>
+                <input type="number" id="termMonths" min="0" max="600" value="0" />
+              </div>
+
+              <div class="form-group">
+                <label for="startDate">Fecha de la Cuota #1</label>
+                <input type="date" id="startDate" value="2026-10-02" />
+              </div>
+
+              <div class="form-group">
+                <label for="rateMV" class="label-with-help">
+                  <span>Tasa Mes Vencido (% M.V.)</span>
+                  <button type="button" class="term-help-btn" data-term="tasa-mv" title="Ver significado en el glosario">?</button>
+                </label>
+                <input type="number" id="rateMV" step="0.01" min="0" max="20" value="0" />
+              </div>
+
+              <div class="form-group">
+                <label for="rateEA" class="label-with-help">
+                  <span>Tasa Efectiva Anual (% E.A.)</span>
+                  <button type="button" class="term-help-btn" data-term="tasa-ea" title="Ver significado en el glosario">?</button>
+                </label>
+                <input type="number" id="rateEA" step="0.01" min="0" max="200" value="0" />
+              </div>
+
+              <div class="form-group pro-only">
+                <label for="totalDisbursedDisplay">Total Desembolsado ($)</label>
+                <input type="text" id="totalDisbursedDisplay" class="input-readonly" readonly value="$0" />
+              </div>
+
+              <div class="form-group pro-only">
+                <label for="financedUpfrontIns" class="label-with-help">
+                  <span>Seguro Financiado Inicio ($)</span>
+                  <button type="button" class="term-help-btn" data-term="seguro-financiado" title="Ver significado en el glosario">?</button>
+                </label>
+                <input type="text" id="financedUpfrontIns" value="0" />
+              </div>
+
+              <div class="form-group pro-only">
+                <label for="upfrontInsMonths">Meses Dif. Seguro Inicio</label>
+                <input type="number" id="upfrontInsMonths" min="1" max="360" value="12" />
+              </div>
+            </div>
+          </div>
+
+          <!-- PESTAÑA 2: Personas -->
+          <div id="tab-personas" class="tab-panel">
+            <div class="panel-title-row">
+              <h2>Participantes del Crédito</h2>
+              <button type="button" id="btnAddParticipant" class="btn btn-secondary btn-xs">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                Persona
+              </button>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label for="splitMode">Modo de Reparto</label>
+              <select id="splitMode">
+                <option value="by_contributions">Calcular % según lo que aporta cada uno</option>
+                <option value="by_target_pct">Fijar % deseado y calcular cuánto debe pagar</option>
+              </select>
+            </div>
+
+            <div class="form-group pro-only" style="margin-bottom: 12px;">
+              <label class="checkbox-inline" title="Si se activa, cuando una persona hace más abonos extra a capital, su saldo interno de deuda baja más rápido y paga menos intereses cada mes.">
+                <input type="checkbox" id="fairInternalDebtToggle" checked />
+                Reducir intereses individuales a quien haga más abonos extra
+              </label>
+            </div>
+
+            <div id="participantsContainer" class="participants-list"></div>
+          </div>
+
+          <!-- PESTAÑA 3: Seguros -->
+          <div id="tab-seguros" class="tab-panel">
+            <div class="panel-title-row">
+              <div>
+                <h2>Seguros y Cargos Mensuales</h2>
+                <p class="card-desc">Define el rango de cuotas/meses de cada seguro (ej. seguro del banco del mes 1 al 12 y otro más económico desde el mes 13 hasta el final).</p>
+              </div>
+              <button type="button" id="btnAddCharge" class="btn btn-secondary btn-xs">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                Agregar
+              </button>
+            </div>
+
+            <div class="form-grid pro-only" style="margin-bottom: 12px;">
+              <div class="form-group">
+                <label for="quota1ExtraFee">Cobro Único Cuota #1 ($)</label>
+                <input type="text" id="quota1ExtraFee" value="0" />
+              </div>
+              <div class="form-group">
+                <label for="quota1InterestAdjust">Interés Real Cuota #1 ($)</label>
+                <input type="text" id="quota1InterestAdjust" value="0" />
+              </div>
+            </div>
+
+            <div id="monthlyChargesList" class="charges-list"></div>
+
+            <div class="charges-total-bar">
+              <span id="totalMonthlyChargesLabel">Seguros Mensuales:</span>
+              <strong id="totalMonthlyChargesDisplay">$0 / mes</strong>
+            </div>
+          </div>
+
+          <!-- PESTAÑA 4: Ajustes -->
+          <div id="tab-estrategia" class="tab-panel">
+            <div class="panel-title-row">
+              <h2>Estrategia de Abonos Extra</h2>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group full-width">
+                <div class="radio-cards">
+                  <label class="radio-card active" id="labelStrategyTerm">
+                    <input type="radio" name="extraStrategy" value="reduce_term" checked />
+                    <div>
+                      <strong>Reducción de Plazo</strong>
+                      <span>Menos meses y mayor ahorro.</span>
+                    </div>
+                  </label>
+                  <label class="radio-card" id="labelStrategyQuota">
+                    <input type="radio" name="extraStrategy" value="reduce_quota" />
+                    <div>
+                      <strong>Reducción de Cuota</strong>
+                      <span>Baja la cuota obligatoria mes a mes.</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="extraStartQuota">Abonar desde Cuota #</label>
+                <input type="number" id="extraStartQuota" min="1" max="600" value="2" />
+              </div>
+
+              <div class="form-group">
+                <label for="extraPaymentMode">Tipo de Aporte Mensual</label>
+                <select id="extraPaymentMode">
+                  <option value="total_budget">Pago Total Mensual (Cuota + Extra)</option>
+                  <option value="fixed_extra">Solo Abono Extra Fijo</option>
+                </select>
+              </div>
+
+              <div class="form-group full-width">
+                <label class="checkbox-inline">
+                  <input type="checkbox" id="includeRegistrationInAsset" checked />
+                  Incluir costo de papeles dentro del porcentaje del bien
+                </label>
+              </div>
+            </div>
+
+            <!-- Simulador de Compra de Cartera / Refinanciación -->
+            <div class="refi-section">
+              <div class="panel-title-row" style="margin-bottom:8px;">
+                <h2 class="label-with-help">
+                  <span>Simulador de Compra de Cartera</span>
+                  <button type="button" class="term-help-btn" data-term="compra-cartera" title="¿Qué es una compra de cartera?">?</button>
+                </h2>
+              </div>
+              <p class="card-desc" style="margin-bottom:12px;">
+                Evalúa cuánto te ahorrarías si trasladas tu saldo pendiente a otro banco con menor tasa de interés:
+              </p>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="refiAfterMonth">Trasladar tras Cuota #</label>
+                  <input type="number" id="refiAfterMonth" min="1" max="600" value="12" />
+                </div>
+                <div class="form-group">
+                  <label for="refiNewTermMonths">Nuevo Plazo (Meses)</label>
+                  <input type="number" id="refiNewTermMonths" min="1" max="360" value="48" />
+                </div>
+                <div class="form-group">
+                  <label for="refiNewRateMV">Nueva Tasa (% M.V.)</label>
+                  <input type="number" id="refiNewRateMV" step="0.01" min="0" max="20" value="1.25" />
+                </div>
+                <div class="form-group">
+                  <label for="refiNewRateEA">Nueva Tasa (% E.A.)</label>
+                  <input type="number" id="refiNewRateEA" step="0.01" min="0" max="200" value="16.08" />
+                </div>
+                <div class="form-group">
+                  <label for="refiNewMonthlyIns">Nuevo Seguro Mes ($)</label>
+                  <input type="text" id="refiNewMonthlyIns" value="120.000" />
+                </div>
+                <div class="form-group">
+                  <label for="refiClosingCosts">Gastos de Traslado ($)</label>
+                  <input type="text" id="refiClosingCosts" value="0" />
+                </div>
+              </div>
+              <div id="refiSummaryBox" class="refi-result-box"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GLOSARIO FINANCIERO DEBAJO DEL PANEL -->
+        <div class="card glossary-card" id="glossaryCard">
+          <button type="button" id="btnToggleGlossary" class="glossary-toggle-btn" aria-expanded="false">
+            <div class="glossary-toggle-left">
+              <span class="glossary-icon-box">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+              </span>
+              <div>
+                <h2>Glosario Financiero</h2>
+                <p class="card-desc">Consulta el significado de términos básicos del crédito</p>
+              </div>
+            </div>
+            <span class="glossary-action-pill" id="glossaryToggleLabel">Ver glosario</span>
+          </button>
+
+          <div id="glossaryBody" class="glossary-body" style="display:none;">
+            <div class="glossary-controls">
+              <input type="text" id="glossarySearchInput" placeholder="Buscar término (ej. capital, tasa E.A., endoso...)" />
+              <div class="glossary-categories" id="glossaryCategoriesBar"></div>
+            </div>
+            <div id="glossaryItemsList" class="glossary-items-list"></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- COLUMNA DERECHA -->
+      <section class="results-column">
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Participación por Persona</h2>
+              <p class="card-desc pro-only">Desglose completo de capital, intereses/seguros y porcentaje del bien.</p>
+            </div>
+            <span class="badge-subtle" id="totalAssetBaseLabel">Base: $0</span>
+          </div>
+
+          <div class="ownership-bar-wrapper">
+            <div class="ownership-bar" id="ownershipBarCapital"></div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table" id="participantsSummaryTable">
+              <thead>
+                <tr>
+                  <th>Persona</th>
+                  <th class="num">Aporte Inicial</th>
+                  <th class="num">Pago Mensual</th>
+                  <th class="num pro-only">Capital Crédito</th>
+                  <th class="num pro-only">Intereses/Seg.</th>
+                  <th class="num">Total Aportado</th>
+                  <th class="num">% del Bien</th>
+                  <th class="num pro-only">% por Bolsillo</th>
+                </tr>
+              </thead>
+              <tbody id="participantsSummaryBody"></tbody>
+              <tfoot id="participantsSummaryFoot"></tfoot>
+            </table>
+          </div>
+
+          <div id="equalizeBox" class="callout-info pro-only"></div>
+        </div>
+
+        <div class="card pro-only" id="proChartsCard">
+          <div class="card-header">
+            <div>
+              <h2>Análisis Visual y Comparador de Escenarios</h2>
+              <p class="card-desc">Curva de saldo, distribución del dinero y comparativa automática de estrategias.</p>
+            </div>
+          </div>
+
+          <div id="scenarioComparisonGrid" class="scenario-comp-grid"></div>
+
+          <div class="pro-charts-grid" style="margin-top: 16px;">
+            <div class="chart-box">
+              <h3>Curva de Saldo de Capital (Banco vs. Tu Plan)</h3>
+              <div id="svgBalanceChart" class="svg-chart-wrapper"></div>
+            </div>
+            <div class="chart-box">
+              <h3>Distribución Total del Crédito</h3>
+              <div id="svgDonutChart" class="svg-chart-wrapper"></div>
+            </div>
+          </div>
+
+          <div class="charts-row" style="margin-top: 16px;">
+            <div class="chart-box">
+              <h3>Desglose del Próximo Pago</h3>
+              <div id="quotaAnatomyContainer" class="anatomy-container"></div>
+            </div>
+            <div class="chart-box">
+              <h3>Costo Total Acumulado</h3>
+              <div id="comparisonBarsContainer" class="comparison-container"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Plan de Pagos Mes a Mes</h2>
+              <p class="card-desc no-print">Marca las cuotas pagadas o agrega un abono extraordinario puntual para cualquier persona.</p>
+            </div>
+            <div class="table-actions no-print">
+              <label class="checkbox-inline pro-only">
+                <input type="checkbox" id="showPerPersonColumnsToggle" />
+                Ver columnas por persona
+              </label>
+              <button type="button" id="btnClearCustomExtras" class="btn btn-ghost btn-xs">Restaurar Abonos Puntuales</button>
+            </div>
+          </div>
+
+          <div class="table-responsive table-scroll">
+            <table class="data-table amort-table" id="amortizationTable">
+              <thead id="amortizationHead"></thead>
+              <tbody id="amortizationBody"></tbody>
+              <tfoot id="amortizationFoot"></tfoot>
+            </table>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <!-- Modal Abono Puntual por Persona -->
+  <div id="personExtraModal" class="modal-backdrop" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle">Abono Extraordinario Puntual</h3>
+        <button type="button" id="btnCloseModal" class="btn btn-ghost btn-xs btn-icon" title="Cerrar">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <p class="card-desc" style="margin-bottom:12px;">
+        Indica cuánto abono extraordinario a capital pone cada persona en este mes (ej. prima o ahorro puntual). Ese valor irá 100% al capital de quien lo aporta:
+      </p>
+      <div id="modalPersonInputs" class="participants-list"></div>
+      <div class="modal-footer">
+        <button type="button" id="btnResetMonthExtra" class="btn btn-ghost btn-xs">Usar abono normal del mes</button>
+        <button type="button" id="btnSaveMonthExtra" class="btn btn-primary">Aplicar a esta cuota</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Crear / Guardar Escenario -->
+  <div id="scenarioModal" class="modal-backdrop" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="scenarioModalTitle">Nuevo Escenario</h3>
+        <button type="button" id="btnCloseScenarioModal" class="btn btn-ghost btn-xs btn-icon" title="Cerrar">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <p class="card-desc" id="scenarioModalDesc" style="margin-bottom:14px;">
+        Asigna un nombre y elige el tipo de crédito para identificarlo con su símbolo en tu lista de escenarios:
+      </p>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label for="scenarioNameInput">Nombre del Escenario</label>
+        <input type="text" id="scenarioNameInput" placeholder="Ej. Vehículo Santander, Crédito Apartamento..." />
+      </div>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label>Tipo de Crédito (Símbolo)</label>
+        <div class="loan-type-grid" id="scenarioLoanTypeGrid">
+          <button type="button" class="loan-type-option active" data-type="vehiculo">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+            <span>Vehicular</span>
+          </button>
+          <button type="button" class="loan-type-option" data-type="personal">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/><path d="M6 15h.01"/><path d="M10 15h4"/></svg>
+            <span>Libre Inversión</span>
+          </button>
+          <button type="button" class="loan-type-option" data-type="hipotecario">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>Hogar</span>
+          </button>
+          <button type="button" class="loan-type-option" data-type="otro">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg>
+            <span>Otro</span>
+          </button>
+        </div>
+      </div>
+      <div class="form-group" id="scenarioStartBlankWrap" style="margin-bottom:6px;">
+        <label class="checkbox-inline">
+          <input type="checkbox" id="scenarioStartBlankCheck" checked />
+          Iniciar todos los valores de este nuevo escenario en 0
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btnCancelScenarioModal" class="btn btn-ghost btn-xs">Cancelar</button>
+        <button type="button" id="btnConfirmScenarioModal" class="btn btn-primary">Guardar Escenario</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Comparar Escenarios Guardados Lado a Lado -->
+  <div id="compareScenariosModal" class="modal-backdrop" style="display:none;">
+    <div class="modal-card modal-card-wide">
+      <div class="modal-header">
+        <h3>Comparador Lado a Lado de Escenarios</h3>
+        <button type="button" id="btnCloseCompareModal" class="btn btn-ghost btn-xs btn-icon" title="Cerrar">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <p class="card-desc" style="margin-bottom:12px;">
+        Compara tu simulación actual con cualquiera de tus escenarios guardados para elegir la mejor alternativa:
+      </p>
+      <div class="form-grid" style="margin-bottom:14px;">
+        <div class="form-group">
+          <label for="compareScenarioSelectA">Escenario A</label>
+          <select id="compareScenarioSelectA"></select>
+        </div>
+        <div class="form-group">
+          <label for="compareScenarioSelectB">Escenario B</label>
+          <select id="compareScenarioSelectB"></select>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table" id="compareScenariosTable">
+          <thead>
+            <tr>
+              <th>Indicador</th>
+              <th class="num" id="compareColHeaderA">Escenario A</th>
+              <th class="num" id="compareColHeaderB">Escenario B</th>
+              <th class="num">Diferencia (B vs. A)</th>
+            </tr>
+          </thead>
+          <tbody id="compareScenariosTableBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <span></span>
+        <button type="button" id="btnDoneCompareModal" class="btn btn-primary">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pie de Página -->
+  <footer class="app-footer no-print">
+    <div class="footer-inner">
+      <span>Hecho por <strong>Julian Pinzon</strong></span>
+      <span class="footer-sep" aria-hidden="true">·</span>
+      <a href="https://github.com/d4rk3rr41n" target="_blank" rel="noopener noreferrer" class="github-link" title="Ver perfil de GitHub">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+        <span>GitHub</span>
+      </a>
+    </div>
+  </footer>
+
+  <script src="js/state.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>
